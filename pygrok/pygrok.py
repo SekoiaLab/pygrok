@@ -82,7 +82,7 @@ class Grok(object):
                 lambda m: "(" + self.predefined_patterns[m.group(1)].regex_str + ")",
                 py_regex_pattern)
 
-            if re.search('%{\w+(:\w+)?}', py_regex_pattern) is None:
+            if re.search('%{\w+(:\w.+)?}', py_regex_pattern) is None:
                 break
 
         self.regex_obj = re.compile(py_regex_pattern)

@@ -43,6 +43,7 @@ class Grok(object):
         custom_patterns=None,
         fullmatch=True,
         match_unnamed_groks=False,
+       flags=0
     ):
         self.pattern = pattern
         self.custom_patterns_dir = custom_patterns_dir
@@ -50,6 +51,7 @@ class Grok(object):
         self.fullmatch = fullmatch
         custom_patterns = custom_patterns or {}
         self.match_unnamed_groks = match_unnamed_groks
+        self.flags = flags
 
         custom_pats = {}
         if custom_patterns_dir is not None:
@@ -138,7 +140,7 @@ class Grok(object):
             if re.search("%{\w+(:[@\w\.?\[\]]+)?}", py_regex_pattern) is None:
                 break
 
-        self.regex_obj = re.compile(py_regex_pattern)
+        self.regex_obj = re.compile(py_regex_pattern, flags=self.flags)
 
 
 def _wrap_pattern_name(pat_name):

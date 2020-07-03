@@ -1,5 +1,25 @@
+def parse_name(source, allow_numeric=False, allow_group_0=False):
+    "Parses a name."
+    name = source.get_while(set(")>"), include=False)
+
+    if not name:
+        raise error("missing group name", source.string, source.pos)
+
+    if name.isdigit():
+        min_group = 0 if allow_group_0 else 1
+        if not allow_numeric or int(name) < min_group:
+            raise error("bad character in group name", source.string,
+              source.pos)
+    else:
+        if not name.replace(".","").isidentifier():
+            raise error("character in group name", source.string,
+              source.pos)
+
+    return name
+
 try:
     import regex as re
+    re._regex_core.parse_name = parse_name
 except ImportError as e:
     # If you import re, grok_match can't handle regular expression containing atomic group(?>)
     import re
@@ -9,6 +29,25 @@ import pkg_resources
 
 DEFAULT_PATTERNS_DIRS = [pkg_resources.resource_filename(__name__, 'patterns')]
 
+
+def parse_name(source, allow_numeric=False, allow_group_0=False):
+    "Parses a name."
+    name = source.get_while(set(")>"), include=False)
+
+    if not name:
+        raise error("missing group name", source.string, source.pos)
+
+    if name.isdigit():
+        min_group = 0 if allow_group_0 else 1
+        if not allow_numeric or int(name) < min_group:
+            raise error("bad character in group name", source.string,
+              source.pos)
+    else:
+        if not name.replace(".","").isidentifier():
+            raise error("character in group name", source.string,
+              source.pos)
+
+    return name
 
 class Grok(object):
     def __init__(self, pattern, custom_patterns_dir=None, custom_patterns={}, fullmatch=True):
@@ -67,13 +106,13 @@ class Grok(object):
         py_regex_pattern = self.pattern
         while True:
             # Finding all types specified in the groks
-            m = re.findall(r'%{(\w+):(\w+):(\w+)}', py_regex_pattern)
+            m = re.findall(r'%{(\w+):([\w\.?]+):(\w+)}', py_regex_pattern)
             for n in m:
                 self.type_mapper[n[1]] = n[2]
             #replace %{pattern_name:custom_name} (or %{pattern_name:custom_name:type}
             # with regex and regex group name
 
-            py_regex_pattern = re.sub(r'%{(\w+):(\w+)(?::\w+)?}',
+            py_regex_pattern = re.sub(r'%{(\w+):([\w\.?]+)(?::\w+)?}',
                 lambda m: "(?P<" + m.group(2) + ">" + self.predefined_patterns[m.group(1)].regex_str + ")",
                 py_regex_pattern)
 
@@ -82,7 +121,7 @@ class Grok(object):
                 lambda m: "(" + self.predefined_patterns[m.group(1)].regex_str + ")",
                 py_regex_pattern)
 
-            if re.search('%{\w+(:\w.+)?}', py_regex_pattern) is None:
+            if re.search('%{\w+(:[\w\.]+)?}', py_regex_pattern) is None:
                 break
 
         self.regex_obj = re.compile(py_regex_pattern)

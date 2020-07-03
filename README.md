@@ -40,6 +40,21 @@ print grok.match(text)
 
 Pretty Cool !
 
+Nested Named group
+
+```Python
+from pygrok import Grok
+text = 'gary is male, 25 years old and weighs 68.5 kilograms'
+pattern = '%{WORD:name} is %{WORD:gender}, %{NUMBER:age} years old and weighs %{NUMBER:weight.value} kilograms'
+grok = Grok(pattern)
+print grok.match(text)
+
+# {'gender': 'male', 'age': '25', 'name': 'gary', 'weight.value': '68.5'}
+```
+
+Event Cooler!
+
+
 Numbers can be converted from string to `int` or `float` if you use `%{pattern:name:type}` syntax, such as `%{NUMBER:age:int}`
 ```Python
 from pygrok import Grok

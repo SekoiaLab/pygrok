@@ -102,7 +102,6 @@ def test_one_pat():
     m = grok.match(text)
     assert m == {'txt': 'some multiline\ntext'}, 'grok match failed:%s, %s' % (text, pat, )
 
-
 def test_multiple_pats():
     text = 'gary 25 "never quit"'
     pat = "%{WORD:name} %{INT:age} %{QUOTEDSTRING:motto}"

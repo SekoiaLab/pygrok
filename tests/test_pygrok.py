@@ -58,6 +58,12 @@ def test_one_pat():
     m = grok.match(text)
     assert m == {'birthyear': 1989}, 'grok match failed:%s, %s' % (text, pat, )
 
+    text = "/home/username/Downloads/test.sh"
+    pat = "%{UNIXPATH:test_int}"
+    grok = Grok(pat)
+    m = grok.match(text)
+    assert m["test_int"] == "/home/username/Downloads/test.sh"
+
 
 def test_multiple_pats():
     text = 'gary 25 "never quit"'

@@ -1,8 +1,33 @@
 try:
+    from regex._regex_core import error
     import regex as re
-except ImportError as e:
+
+    def parse_name(source, allow_numeric=False, allow_group_0=False):
+        "Parses a name."
+        name = source.get_while(set(")>"), include=False)
+
+        if not name:
+            raise error("missing group name", source.string, source.pos)
+
+        if name.isdigit():
+            min_group = 0 if allow_group_0 else 1
+            if not allow_numeric or int(name) < min_group:
+                raise error("bad character in group name", source.string,
+                  source.pos)
+        else:
+            if not name.replace(".","").isidentifier():
+                raise error("character in group name", source.string,
+                  source.pos)
+
+        return name
+
+    # this allows dots in the group names
+    re._regex_core.parse_name = parse_name
+
+except ImportError:
     # If you import re, grok_match can't handle regular expression containing atomic group(?>)
     import re
+
 import codecs
 import os
 import pkg_resources
@@ -58,9 +83,9 @@ class Grok(object):
                     matches[key] = int(match)
                 if self.type_mapper[key] == "float":
                     matches[key] = float(match)
-            except (TypeError, KeyError) as e:
+            except (TypeError, KeyError):
                 pass
-        return matches
+        return unflatten(matches)
 
     def set_search_pattern(self, pattern=None):
         if type(pattern) is not str:
@@ -73,16 +98,16 @@ class Grok(object):
         py_regex_pattern = self.pattern
         while True:
             # Finding all types specified in the groks
-            m = re.findall(r"%{(\w+):(\w+):(\w+)}", py_regex_pattern)
+            m = re.findall(r"%{(\w+):\[?([\w\.?]+)\]?:(\w+)}", py_regex_pattern)
             for n in m:
                 self.type_mapper[n[1]] = n[2]
             # replace %{pattern_name:custom_name} (or %{pattern_name:custom_name:type}
             # with regex and regex group name
 
             py_regex_pattern = re.sub(
-                r"%{(\w+):(\w+)(?::\w+)?}",
+                r"%{(\w+):(\[?[\w\]\[\.]+\]?)(?::\w+)?}",
                 lambda m: "(?P<"
-                + m.group(2)
+                + m.group(2).replace("][", ".").replace("[", "").replace("]", "")
                 + ">"
                 + self.predefined_patterns[m.group(1)].regex_str
                 + ")",
@@ -108,7 +133,7 @@ class Grok(object):
                 py_regex_pattern,
             )
 
-            if re.search("%{\w+(:\w+)?}", py_regex_pattern) is None:
+            if re.search("%{\w+(:\[?[\w\.\]\[]+\]?)?}", py_regex_pattern) is None:
                 break
 
         self.regex_obj = re.compile(py_regex_pattern)
@@ -146,6 +171,20 @@ def _load_patterns_from_file(file):
     return patterns
 
 
+def unflatten(dictionary, nullable=False):
+    resultDict = dict()
+    for key, value in dictionary.items():
+        if nullable or value is not None:
+            parts = key.split(".")
+            d = resultDict
+            for part in parts[:-1]:
+                if part not in d:
+                    d[part] = dict()
+                d = d[part]
+            d[parts[-1]] = value
+    return resultDict
+
+
 class Pattern(object):
     """ """
 
@@ -160,3 +199,4 @@ class Pattern(object):
             self.regex_str,
             self.sub_patterns,
         )
+

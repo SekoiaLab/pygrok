@@ -142,7 +142,7 @@ def test_multiple_pats():
         + ' Chrome/36.0.1985.125 Safari/537.36"'
     )
     pat = (
-        "%{HOSTNAME:host} %{IP:client_ip} %{NUMBER:delay}s - \[%{DATA:time_stamp}\]"
+        "%{HOSTNAME:host} %{IP:client_ip} %{NUMBER:delay}s - \\[%{DATA:time_stamp}\\]"
         + ' "%{WORD:verb} %{URIPATHPARAM:uri_path} HTTP/%{NUMBER:http_ver}" %{INT:http_status} %{INT:bytes} %{QS}'
         + " %{QS:client}"
     )

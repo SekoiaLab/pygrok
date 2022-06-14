@@ -15,7 +15,7 @@ try:
                 raise error("bad character in group name", source.string,
                   source.pos)
         else:
-            if not name.replace(".","").isidentifier():
+            if not name.replace("@", "").replace(".","").isidentifier():
                 raise error("character in group name", source.string,
                   source.pos)
 
@@ -98,16 +98,16 @@ class Grok(object):
         py_regex_pattern = self.pattern
         while True:
             # Finding all types specified in the groks
-            m = re.findall(r"%{(\w+):([\w\.?\[\]]+):(\w+)}", py_regex_pattern)
+            m = re.findall(r"%{(\w+):([@\w\.?\[\]]+):(\w+)}", py_regex_pattern)
             for n in m:
                 # accounts for dotted or legacy groups, but not both at the same time
-                key =  '.'.join([f[1] and f[1] or f[0] for f in re.findall("\[(\w*?)\]|(\w+)", n[1])])
+                key =  '.'.join([f[1] and f[1] or f[0] for f in re.findall("\[([@\.\w]*?)\]|([@\.\w]+)", n[1])])
                 self.type_mapper[key] = n[2]
             # replace %{pattern_name:custom_name} (or %{pattern_name:custom_name:type}
             # with regex and regex group name
 
             py_regex_pattern = re.sub(
-                r"%{(\w+):(\[?[\w\]\[\.]+\]?)(?::\w+)?}",
+                r"%{(\w+):(\[?[@\w\]\[\.]+\]?)(?::\w+)?}",
                 lambda m: "(?P<"
                 + m.group(2).replace("][", ".").replace("[", "").replace("]", "")
                 + ">"
@@ -135,7 +135,7 @@ class Grok(object):
                 py_regex_pattern,
             )
 
-            if re.search("%{\w+(:[\w\.?\[\]]+)?}", py_regex_pattern) is None:
+            if re.search("%{\w+(:[@\w\.?\[\]]+)?}", py_regex_pattern) is None:
                 break
 
         self.regex_obj = re.compile(py_regex_pattern)

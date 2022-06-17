@@ -1,4 +1,5 @@
 from pygrok import Grok
+import pygrok
 try:
    import regex as re
 except ImportError as e:
@@ -260,9 +261,21 @@ def test_match_unnamed():
     assert m["HOSTNAME"] == "test.com"
 
 
+def test_predefined_patterns():
+    grok = Grok("%{DATA}")
+    errors = []
+    for pattern in grok.predefined_patterns:
+        try:
+            g = Grok("%{"+pattern+"}")
+        except Exception as e:
+            errors.append((pattern, str(e)))
+    assert errors == []
+
+
 if __name__ == "__main__":
     test_one_pat()
     test_multiple_pats()
     test_custom_pats()
     test_custom_pat_files()
     test_hotloading_pats()
+    test_predefined_patterns()

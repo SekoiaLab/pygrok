@@ -43,7 +43,7 @@ class Grok(object):
         custom_patterns=None,
         fullmatch=True,
         match_unnamed_groks=False,
-       flags=0
+        flags=0
     ):
         self.pattern = pattern
         self.custom_patterns_dir = custom_patterns_dir
@@ -99,22 +99,33 @@ class Grok(object):
         self.type_mapper = {}
         py_regex_pattern = self.pattern
         while True:
+            # used as safe exit condition
+            old_py_regex_pattern = py_regex_pattern
+
             # Finding all types specified in the groks
-            m = re.findall(r"%{(\w+):([@\w\.?\[\]]+):(\w+)}", py_regex_pattern)
+            m = re.findall(r"%{(\w+):([@\w\.\[\]]+):(\w+)}", py_regex_pattern)
             for n in m:
                 # accounts for dotted or legacy groups, but not both at the same time
-                key =  '.'.join([f[1] and f[1] or f[0] for f in re.findall("\[([@\.\w]*?)\]|([@\.\w]+)", n[1])])
+                key = '.'.join([f[1] and f[1] or f[0] for f in re.findall(r"\[([@\.\w]*?)\]|([@\.\w]+)", n[1])])
                 self.type_mapper[key] = n[2]
             # replace %{pattern_name:custom_name} (or %{pattern_name:custom_name:type}
             # with regex and regex group name
 
+            def _validate_sub(r):
+                """ Validate group names and return search substitution """
+                s = r.group(2).replace("][", ".").replace("[", "").replace("]", "")
+                if not re.fullmatch(r'^(@?\w[\.\w]*)+$', s):
+                    raise RuntimeError("Error in group name definition: '%s' ('%s')" % (r.group(2), self.pattern))
+                return ("(?P<"
+                    + s
+                    + ">"
+                    + self.predefined_patterns[r.group(1)].regex_str
+                    + ")"
+                )
+
             py_regex_pattern = re.sub(
-                r"%{(\w+):(\[?[@\w\]\[\.]+\]?)(?::\w+)?}",
-                lambda m: "(?P<"
-                + m.group(2).replace("][", ".").replace("[", "").replace("]", "")
-                + ">"
-                + self.predefined_patterns[m.group(1)].regex_str
-                + ")",
+                r"%{(\w+):([@\w\[\]\.?]+)(?::\w+)?}",
+                _validate_sub,
                 py_regex_pattern,
             )
 
@@ -137,8 +148,12 @@ class Grok(object):
                 py_regex_pattern,
             )
 
-            if re.search("%{\w+(:[@\w\.?\[\]]+)?}", py_regex_pattern) is None:
+            if re.search(r"%{\w+(:[@\w\[\]\.]+)?}", py_regex_pattern) is None:
                 break
+
+            # avoid endless loop recursion
+            if py_regex_pattern == old_py_regex_pattern:
+                raise RuntimeError("Error in pattern definition: %s" % py_regex_pattern)
 
         self.regex_obj = re.compile(py_regex_pattern, flags=self.flags)
 

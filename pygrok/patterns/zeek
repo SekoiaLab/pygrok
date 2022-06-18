@@ -23,8 +23,8 @@ ZEEK_CONN %{NUMBER:timestamp}\t%{NOTSPACE:zeek.session_id}\t%{IP:source.ip}\t%{I
 # :long - %{INT:destination.bytes:int}
 
 # files.log - updated BRO_FILES format (2 new fields added at the end)
-ZEEK_FILES_TX_HOSTS (?:-|%{IP:server.ip})|(?<zeek.files.tx_hosts>%{IP:server.ip}(?:\s,%{IP})+)
-ZEEK_FILES_RX_HOSTS (?:-|%{IP:client.ip})|(?<zeek.files.rx_hosts>%{IP:client.ip}(?:\s,%{IP})+)
+ZEEK_FILES_TX_HOSTS (?:-|%{IP:server.ip})|(?<zeek.files.tx_hosts>%{IP:server.ip}(?:[\s,]%{IP})+)
+ZEEK_FILES_RX_HOSTS (?:-|%{IP:client.ip})|(?<zeek.files.rx_hosts>%{IP:client.ip}(?:[\s,]%{IP})+)
 ZEEK_FILES %{NUMBER:timestamp}\t%{NOTSPACE:zeek.files.fuid}\t%{ZEEK_FILES_TX_HOSTS}\t%{ZEEK_FILES_RX_HOSTS}\t(?:-|%{ZEEK_DATA:zeek.files.session_ids})\t(?:-|%{ZEEK_DATA:zeek.files.source})\t(?:-|%{INT:zeek.files.depth:int})\t(?:-|%{ZEEK_DATA:zeek.files.analyzers})\t(?:-|%{ZEEK_DATA:file.mime_type})\t(?:-|%{ZEEK_DATA:file.name})\t(?:-|%{NUMBER:zeek.files.duration:float})\t(?:-|%{ZEEK_DATA:zeek.files.local_orig})\t(?:-|%{ZEEK_BOOL:zeek.files.is_orig})\t(?:-|%{INT:zeek.files.seen_bytes:int})\t(?:-|%{INT:file.size:int})\t(?:-|%{INT:zeek.files.missing_bytes:int})\t(?:-|%{INT:zeek.files.overflow_bytes:int})\t(?:-|%{ZEEK_BOOL:zeek.files.timedout})\t(?:-|%{ZEEK_DATA:zeek.files.parent_fuid})\t(?:-|%{ZEEK_DATA:file.hash.md5})\t(?:-|%{ZEEK_DATA:file.hash.sha1})\t(?:-|%{ZEEK_DATA:file.hash.sha256})\t(?:-|%{ZEEK_DATA:zeek.files.extracted})(?:\t(?:-|%{ZEEK_BOOL:zeek.files.extracted_cutoff})\t(?:-|%{INT:zeek.files.extracted_size:int}))?
 # :long - %{INT:zeek.files.seen_bytes:int}
 # :long - %{INT:file.size:int}

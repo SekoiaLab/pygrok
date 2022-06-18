@@ -1,4 +1,10 @@
 from pygrok import Grok
+import pygrok
+try:
+   import regex as re
+except ImportError as e:
+   # If you import re, grok_match can't handle regular expression containing atomic group(?>)
+   import re
 
 
 def test_one_pat():
@@ -91,6 +97,11 @@ def test_one_pat():
     m = grok.match(text)
     assert m["test_int"] == "/home/username/Downloads/test.sh"
 
+    text = 'some multiline\ntext'
+    pat = '%{GREEDYDATA:txt}'
+    grok = Grok(pat, flags=re.M | re.S)
+    m = grok.match(text)
+    assert m == {'txt': 'some multiline\ntext'}, 'grok match failed:%s, %s' % (text, pat, )
 
 def test_multiple_pats():
     text = 'gary 25 "never quit"'
@@ -132,7 +143,7 @@ def test_multiple_pats():
         + ' Chrome/36.0.1985.125 Safari/537.36"'
     )
     pat = (
-        "%{HOSTNAME:host} %{IP:client_ip} %{NUMBER:delay}s - \[%{DATA:time_stamp}\]"
+        "%{HOSTNAME:host} %{IP:client_ip} %{NUMBER:delay}s - \\[%{DATA:time_stamp}\\]"
         + ' "%{WORD:verb} %{URIPATHPARAM:uri_path} HTTP/%{NUMBER:http_ver}" %{INT:http_status} %{INT:bytes} %{QS}'
         + " %{QS:client}"
     )
@@ -250,9 +261,21 @@ def test_match_unnamed():
     assert m["HOSTNAME"] == "test.com"
 
 
+def test_predefined_patterns():
+    grok = Grok("%{DATA}")
+    errors = []
+    for pattern in grok.predefined_patterns:
+        try:
+            g = Grok("%{"+pattern+"}")
+        except Exception as e:
+            errors.append((pattern, str(e)))
+    assert errors == []
+
+
 if __name__ == "__main__":
     test_one_pat()
     test_multiple_pats()
     test_custom_pats()
     test_custom_pat_files()
     test_hotloading_pats()
+    test_predefined_patterns()

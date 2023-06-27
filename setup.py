@@ -19,7 +19,7 @@ setup(
     packages=["pygrok"],
     include_package_data=True,
     zip_safe=True,
-    keywords=["python grok", "pyre2"],  # arbitrary keywords
+    keywords=["python grok"],  # arbitrary keywords
     download_url="https://github.com/garyelephant/pygrok/tarball/v1.0.0",
-    install_requires=["pyre2"],
+    install_requires=["sekoia-re2"],
 )

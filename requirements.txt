@@ -1,1 +1,1 @@
-pyre2==0.3.6
+sekoia-re2

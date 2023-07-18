@@ -6,6 +6,10 @@ import pkg_resources
 DEFAULT_PATTERNS_DIRS = [pkg_resources.resource_filename(__name__, "patterns")]
 
 
+re2_options = re.Options()
+max_mem = int(os.getenv("RE2_MAX_MEM", 100 << 20))
+setattr(re2_options, "max_mem", max_mem)  # noqa: B010
+
 class Grok(object):
     def __init__(
         self,
@@ -69,7 +73,7 @@ class Grok(object):
         py_regex_pattern = self.pattern
         while True:
             # Finding all types specified in the groks
-            m = re.findall(r"%{(\w+):(\w+):(\w+)}", py_regex_pattern)
+            m = re.findall(r"%{(\w+):(\w+):(\w+)}", py_regex_pattern, options=re2_options)
             for n in m:
                 self.type_mapper[n[1]] = n[2]
             # replace %{pattern_name:custom_name} (or %{pattern_name:custom_name:type}
@@ -83,6 +87,7 @@ class Grok(object):
                 + self.predefined_patterns[m.group(1)].regex_str
                 + ")",
                 py_regex_pattern,
+                options=re2_options
             )
 
             # replace %{pattern_name} with regex
@@ -102,12 +107,13 @@ class Grok(object):
                 r"%{(\w+)}",
                 sub_method,
                 py_regex_pattern,
+                options=re2_options
             )
 
-            if re.search("%{\w+(:\w+)?}", py_regex_pattern) is None:
+            if re.search("%{\w+(:\w+)?}", py_regex_pattern, options=re2_options) is None:
                 break
 
-        self.regex_obj = re.compile(py_regex_pattern)
+        self.regex_obj = re.compile(py_regex_pattern, options=re2_options)
 
 
 def _wrap_pattern_name(pat_name):

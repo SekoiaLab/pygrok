@@ -1,1 +1,1 @@
-sekoia-re2==1.2
+sekoia-re2==2.0.2

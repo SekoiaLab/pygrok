@@ -1,5 +1,6 @@
-from setuptools import setup
 import os
+
+from setuptools import setup
 
 long_desc = ""
 
@@ -8,7 +9,7 @@ if os.path.exists("README.rst"):
 
 setup(
     name="pygrok",
-    version="1.0.3",
+    version="1.0.4",
     description="A Python library to parse strings and"
     + " extract information from structured/unstructured data",
     long_description=long_desc,

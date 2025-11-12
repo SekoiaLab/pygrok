@@ -1,42 +1,52 @@
 import codecs
 import os
+from functools import cache
+from importlib import resources
 
-import pkg_resources
 import re2 as re
 
-DEFAULT_PATTERNS_DIRS = [pkg_resources.resource_filename(__name__, "patterns")]
+DEFAULT_PATTERNS_DIRS = str(resources.files(__name__) / "patterns")
 
 
 max_mem = int(os.getenv("RE2_MAX_MEM", 100 << 20))
+
+
+class Pattern(object):
+    """ """
+
+    def __init__(self, pattern_name, regex_str, sub_patterns=None):
+        self.pattern_name = pattern_name
+        self.regex_str = regex_str
+        self.sub_patterns = sub_patterns or {}  # sub_pattern name list
+
+    def __str__(self):
+        return "<Pattern:%s,  %s,  %s>" % (
+            self.pattern_name,
+            self.regex_str,
+            self.sub_patterns,
+        )
 
 
 class Grok(object):
     def __init__(
         self,
         pattern,
-        custom_patterns_dir=None,
         custom_patterns=None,
         fullmatch=True,
         match_unnamed_groks=False,
     ):
-        self.pattern = pattern
-        self.custom_patterns_dir = custom_patterns_dir
-        self.predefined_patterns = _reload_patterns(DEFAULT_PATTERNS_DIRS)
         self.fullmatch = fullmatch
-        custom_patterns = custom_patterns or {}
-        self.match_unnamed_groks = match_unnamed_groks
 
-        custom_pats = {}
-        if custom_patterns_dir is not None:
-            custom_pats = _reload_patterns([custom_patterns_dir])
+        base_patterns = _reload_patterns(DEFAULT_PATTERNS_DIRS)
 
-        for pat_name, regex_str in custom_patterns.items():
-            custom_pats[pat_name] = Pattern(pat_name, regex_str)
+        if custom_patterns:
+            # Create a copy to avoid altering the cached version
+            base_patterns = base_patterns.copy()
 
-        if len(custom_pats) > 0:
-            self.predefined_patterns.update(custom_pats)
+            for pat_name, regex_str in custom_patterns.items():
+                base_patterns[pat_name] = Pattern(pat_name, regex_str)
 
-        self._load_search_pattern()
+        self._load_search_pattern(pattern, base_patterns, match_unnamed_groks)
 
     def match(self, text):
         """If text is matched with pattern, return variable names specified(%{pattern:variable name})
@@ -49,8 +59,9 @@ class Grok(object):
         else:
             match_obj = self.regex_obj.search(text)
 
-        if match_obj == None:
+        if match_obj is None:
             return None
+
         matches = match_obj.groupdict()
         for key, match in matches.items():
             try:
@@ -58,19 +69,14 @@ class Grok(object):
                     matches[key] = int(match)
                 if self.type_mapper[key] == "float":
                     matches[key] = float(match)
-            except (TypeError, KeyError) as e:
+            except (TypeError, KeyError):
                 pass
+
         return matches
 
-    def set_search_pattern(self, pattern=None):
-        if type(pattern) is not str:
-            raise ValueError("Please supply a valid pattern")
-        self.pattern = pattern
-        self._load_search_pattern()
-
-    def _load_search_pattern(self):
+    def _load_search_pattern(self, pattern, base_patterns, match_unnamed_groks):
         self.type_mapper = {}
-        py_regex_pattern = self.pattern
+        py_regex_pattern = pattern
         while True:
             # Finding all types specified in the groks
             m = re.findall(r"%{(\w+):(\w+):(\w+)}", py_regex_pattern)
@@ -84,24 +90,22 @@ class Grok(object):
                 lambda m: "(?P<"
                 + m.group(2)
                 + ">"
-                + self.predefined_patterns[m.group(1)].regex_str
+                + base_patterns[m.group(1)].regex_str
                 + ")",
                 py_regex_pattern,
             )
 
             # replace %{pattern_name} with regex
-            if self.match_unnamed_groks:
+            if match_unnamed_groks:
                 sub_method = (
                     lambda m: "(?P<"
                     + m.group(1)
                     + ">"
-                    + self.predefined_patterns[m.group(1)].regex_str
+                    + base_patterns[m.group(1)].regex_str
                     + ")"
                 )
             else:
-                sub_method = (
-                    lambda m: "(" + self.predefined_patterns[m.group(1)].regex_str + ")"
-                )
+                sub_method = lambda m: "(" + base_patterns[m.group(1)].regex_str + ")"
             py_regex_pattern = re.sub(r"%{(\w+)}", sub_method, py_regex_pattern)
 
             if re.search("%{\w+(:\w+)?}", py_regex_pattern) is None:
@@ -110,17 +114,14 @@ class Grok(object):
         self.regex_obj = re.compile(py_regex_pattern, max_mem=max_mem)
 
 
-def _wrap_pattern_name(pat_name):
-    return "%{" + pat_name + "}"
-
-
-def _reload_patterns(patterns_dirs):
+@cache
+def _reload_patterns(patterns_dir):
     """ """
     all_patterns = {}
-    for dir in patterns_dirs:
-        for f in os.listdir(dir):
-            patterns = _load_patterns_from_file(os.path.join(dir, f))
-            all_patterns.update(patterns)
+
+    for f in os.listdir(patterns_dir):
+        patterns = _load_patterns_from_file(os.path.join(patterns_dir, f))
+        all_patterns.update(patterns)
 
     return all_patterns
 
@@ -140,19 +141,3 @@ def _load_patterns_from_file(file):
             pat = Pattern(pat_name, regex_str)
             patterns[pat.pattern_name] = pat
     return patterns
-
-
-class Pattern(object):
-    """ """
-
-    def __init__(self, pattern_name, regex_str, sub_patterns=None):
-        self.pattern_name = pattern_name
-        self.regex_str = regex_str
-        self.sub_patterns = sub_patterns or {}  # sub_pattern name list
-
-    def __str__(self):
-        return "<Pattern:%s,  %s,  %s>" % (
-            self.pattern_name,
-            self.regex_str,
-            self.sub_patterns,
-        )

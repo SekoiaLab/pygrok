@@ -97,11 +97,12 @@ def test_multiple_pats():
     pat = "%{WORD:name} %{INT:age} %{QUOTEDSTRING:motto}"
     grok = Grok(pat)
     m = grok.match(text)
-    assert (
-        m["name"] == "gary" and m["age"] == "25" and m["motto"] == '"never quit"'
-    ), "grok match failed:%s, %s" % (
-        text,
-        pat,
+    assert m["name"] == "gary" and m["age"] == "25" and m["motto"] == '"never quit"', (
+        "grok match failed:%s, %s"
+        % (
+            text,
+            pat,
+        )
     )
 
     # variable names are not set
@@ -132,7 +133,7 @@ def test_multiple_pats():
         + ' Chrome/36.0.1985.125 Safari/537.36"'
     )
     pat = (
-        "%{HOSTNAME:host} %{IP:client_ip} %{NUMBER:delay}s - \[%{DATA:time_stamp}\]"
+        "%{HOSTNAME:host} %{IP:client_ip} %{NUMBER:delay}s - \\[%{DATA:time_stamp}\\]"
         + ' "%{WORD:verb} %{URIPATHPARAM:uri_path} HTTP/%{NUMBER:http_ver}" %{INT:http_status} %{INT:bytes} %{QS}'
         + " %{QS:client}"
     )
@@ -200,47 +201,6 @@ def test_custom_pats():
     )
 
 
-def test_custom_pat_files():
-    import os.path
-
-    pats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_patterns")
-    text = 'Beijing-1104,gary 25 "never quit"'
-    # pattern "ID" is defined in ./test_patterns/pats
-    pat = "%{ID:user_id},%{WORD:name} %{INT:age} %{QUOTEDSTRING:motto}"
-    grok = Grok(pat, custom_patterns_dir=pats_dir)
-    m = grok.match(text)
-    assert (
-        m["user_id"] == "Beijing-1104"
-        and m["name"] == "gary"
-        and m["age"] == "25"
-        and m["motto"] == '"never quit"'
-    ), "grok match failed:%s, %s" % (
-        text,
-        pat,
-    )
-
-
-def test_hotloading_pats():
-    text = "github"
-    pat = "%{WORD:test_word}"
-    grok = Grok(pat)
-    m = grok.match(text)
-    assert m["test_word"] == "github", "grok match failed:%s, %s" % (
-        text,
-        pat,
-    )
-    # matches
-
-    text = "1989"
-    pat = "%{NUMBER:birthyear:int}"
-    grok.set_search_pattern(pat)
-    m = grok.match(text)
-    assert m == {"birthyear": 1989}, "grok match failed:%s, %s" % (
-        text,
-        pat,
-    )
-
-
 def test_match_unnamed():
     url = "https://foo:bar@test.com/path?query=1"
     grok = Grok("%{URI}", match_unnamed_groks=True)
@@ -254,5 +214,3 @@ if __name__ == "__main__":
     test_one_pat()
     test_multiple_pats()
     test_custom_pats()
-    test_custom_pat_files()
-    test_hotloading_pats()

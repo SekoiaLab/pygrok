@@ -9,7 +9,7 @@ if os.path.exists("README.rst"):
 
 setup(
     name="pygrok",
-    version="1.0.4",
+    version="2.0",
     description="A Python library to parse strings and"
     + " extract information from structured/unstructured data",
     long_description=long_desc,

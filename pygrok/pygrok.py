@@ -108,7 +108,7 @@ class Grok(object):
                 sub_method = lambda m: "(" + base_patterns[m.group(1)].regex_str + ")"
             py_regex_pattern = re.sub(r"%{(\w+)}", sub_method, py_regex_pattern)
 
-            if re.search("%{\w+(:\w+)?}", py_regex_pattern) is None:
+            if re.search(r"%{\w+(:\w+)?}", py_regex_pattern) is None:
                 break
 
         self.regex_obj = re.compile(py_regex_pattern, max_mem=max_mem)
